@@ -1,0 +1,83 @@
+version: '3.4'
+
+services:
+
+  wallSticker_consul_server1:
+    image: consul:1.15.4
+    container_name: wallSticker_consul_server1
+    command: agent -server -client=0.0.0.0 -bootstrap -node=wallSticker_consul_server1 -datacenter=dc1
+    environment:
+      - TZ=Asia/Shanghai
+
+  wallSticker_consul_server2:
+    depends_on:
+      - wallSticker_consul_server1
+    image: consul:1.15.4
+    container_name: wallSticker_consul_server2
+    command: agent -server -client=0.0.0.0 -retry-join=wallSticker_consul_server1 -node=wallSticker_consul_server2 -datacenter=dc1
+    environment:
+      - TZ=Asia/Shanghai
+
+  wallSticker_consul_server3:
+    depends_on:
+      - wallSticker_consul_server1
+    image: consul:1.15.4
+    container_name: wallSticker_consul_server3
+    command: agent -server -client=0.0.0.0 -retry-join=wallSticker_consul_server1 -node=wallSticker_consul_server3 -datacenter=dc1
+    environment:
+      - TZ=Asia/Shanghai
+
+  wallSticker_consul_client1:
+    depends_on:
+      - wallSticker_consul_server1
+    image: consul:1.15.4
+    container_name: wallSticker_consul_client1
+    ports:
+      - 8520:8500
+    command: agent -ui -client=0.0.0.0 -retry-join=wallSticker_consul_server1 -node=wallSticker_consul_client1 -datacenter=dc1
+    environment:
+      - TZ=Asia/Shanghai
+
+  wallSticker_minio:
+    image: minio/minio:latest
+    container_name: WallSticker_MinIO
+    ports:
+      - 9100:9000
+      - 9190:9090
+    environment:
+      - TZ=Asia/Shanghai
+      - MINIO_ROOT_USER=admin
+      - MINIO_ROOT_PASSWORD=Password123
+    volumes:
+      - .\MinIO\data:/data
+      - .\MinIO\config:/root/.minio
+    command: server /data --console-address ":9090"
+
+  wallSticker_redis:
+    image: redis:alpine
+    container_name: WallSticker_Redis
+    ports:
+      - 6779:6379
+    environment:
+      - TZ=Asia/Shanghai
+    volumes:
+      - .\Redis\redis.conf:/etc/redis/redis.conf
+      - .\Redis\data:/data
+    logging:
+      options:
+        max-size: 100m
+        max-file: 2
+    command: redis-server /etc/redis/redis.conf  --appendonly yes  --requirepass Password123
+
+  wallSticker_seq:
+    image: datalust/seq
+    container_name: WallSticker_Seq
+    ports:
+      - 8781:80
+      - 5641:5341
+    environment:
+      - TZ=Asia/Shanghai
+      - ACCEPT_EULA=Y
+      - SEQ_CACHE_SYSTEMTAMTARGET=0
+    volumes:
+      - .\Seq\data:/data

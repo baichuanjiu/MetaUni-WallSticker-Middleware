@@ -1,0 +1,1 @@
+docker run -p 9100:9000 -p 9190:9090 --name WallSticker_MinIO -v ${pwd}\data:/data -v ${pwd}\config:/root/.minio -e "TZ=Asia/Shanghai" -e "MINIO_ROOT_USER=admin" -e "MINIO_ROOT_PASSWORD=Password123" -d minio/minio server /data --console-address ":9090"
